@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Raport Test</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    #report-print-area.hidden{ display:none; }
+    body{ background:#eef2f7; }
+  </style>
+</head>
+<body>
+  <div id="report-print-area" class="hidden"></div>
+  <script>
+function safeText_(v){ return String(v == null ? "" : v); }
+function metaFieldHtml_(label, value){
+  return `<span class="meta-line"><span class="meta-label">${safeText_(label)}</span><span class="meta-colon">:</span><span class="meta-value">${safeText_(value || "")}</span></span>`;
+}
+function fillMetaTables_(doc, ctx){
+  const metaTables = Array.from(doc.querySelectorAll("table.meta"));
+  metaTables.forEach(tbl=>{
+    const rows = tbl.querySelectorAll("tr");
+    if(rows[0]){
+      const tds = rows[0].querySelectorAll("td");
+      if(tds[0]) tds[0].innerHTML = metaFieldHtml_("Nama Sekolah", ctx.schoolName);
+      if(tds[1]) tds[1].innerHTML = metaFieldHtml_("Fase / Tingkatan", ctx.faseText);
+    }
+    if(rows[1]){
+      const tds = rows[1].querySelectorAll("td");
+      if(tds[0]) tds[0].innerHTML = metaFieldHtml_("Alamat", ctx.address);
+      if(tds[1]) tds[1].innerHTML = metaFieldHtml_("Kelas", ctx.className);
+    }
+    if(rows[2]){
+      const tds = rows[2].querySelectorAll("td");
+      if(tds[0]) tds[0].innerHTML = metaFieldHtml_("Nama Siswa", ctx.studentName);
+      if(tds[1]) tds[1].innerHTML = metaFieldHtml_("Semester", ctx.semesterLabel);
+    }
+    if(rows[3]){
+      const tds = rows[3].querySelectorAll("td");
+      if(tds[0]) tds[0].innerHTML = metaFieldHtml_("NIS / NISN", ctx.nisText);
+      if(tds[1]) tds[1].innerHTML = metaFieldHtml_("Tahun Pelajaran", ctx.yearLabel);
+    }
+  });
+}
+function fillSubjectTableGenap_(table, rowsData){
+  const rows = Array.from(table.querySelectorAll("tr")).filter(tr=>!tr.classList.contains("group-row"));
+  const dataRows = rows.slice(1);
+  dataRows.forEach((tr, idx)=>{
+    const d = rowsData[idx] || {};
+    const tds = tr.querySelectorAll("td");
+    if(tds[1] && d.relabel && d.label) tds[1].textContent = d.label;
+    if(tds[3]) tds[3].textContent = d.final || "";
+    if(tds[4]) tds[4].textContent = safeText_(d.kompetensiText || "");
+  });
+}
+function fillTalentTableGenap_(table, talent){
+  const rows = table.querySelectorAll("tr");
+  const groupRow = rows[1];
+  const row1 = rows[2];
+  const row2 = rows[3];
+  const jenis = safeText_(talent.name || "");
+  if(groupRow){
+    const td = groupRow.querySelector("td");
+    if(td) td.textContent = jenis ? `Jenis Talent - ${jenis}` : "Jenis Talent";
+  }
+  if(row1){
+    const tds = row1.querySelectorAll("td");
+    if(tds[1]) tds[1].textContent = jenis;
+    if(tds[2]) tds[2].textContent = safeText_(talent.predicate || "");
+    if(tds[3]) tds[3].textContent = safeText_(talent.description || "");
+  }
+  if(row2){
+    const tds = row2.querySelectorAll("td");
+    if(tds[1]) tds[1].textContent = "";
+    if(tds[2]) tds[2].textContent = "";
+    if(tds[3]) tds[3].textContent = "";
+  }
+}
+function fillEkskulTable_(table, ekskul){
+  const rows = Array.from(table.querySelectorAll("tr")).slice(1);
+  const list = Array.isArray(ekskul) ? ekskul : [];
+  rows.forEach((tr, idx)=>{
+    const item = list[idx] || {};
+    const tds = tr.querySelectorAll("td");
+    if(tds[1]) tds[1].textContent = safeText_(item.name || "");
+    if(tds[2]) tds[2].textContent = safeText_(item.predicate || "");
+    if(tds[3]) tds[3].textContent = safeText_(item.description || "");
+  });
+}
+function fillSingleColumnTable_(table, value){
+  const rows = table.querySelectorAll("tr");
+  if(rows[1]){
+    const td = rows[1].querySelectorAll("td")[1];
+    if(td) td.textContent = safeText_(value || "");
+  }
+}
+function fillAbsensiTable_(table, meta){
+  const rows = table.querySelectorAll("tr");
+  const hari = v => { const n = Number(v || 0); return n > 0 ? `${n} hari` : "- hari"; };
+  if(rows[1]){ const td = rows[1].querySelectorAll("td")[1]; if(td) td.textContent = hari(meta.sakit); }
+  if(rows[2]){ const td = rows[2].querySelectorAll("td")[1]; if(td) td.textContent = hari(meta.izin); }
+  if(rows[3]){ const td = rows[3].querySelectorAll("td")[1]; if(td) td.textContent = hari(meta.alpha); }
+}
+const BULAN_ID_ = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+function tanggalLaporanId_(){
+  const d = new Date();
+  return `${d.getDate()} ${BULAN_ID_[d.getMonth()]} ${d.getFullYear()}`;
+}
+let homeroomMap = { "Kelas 7": { email:"guru@x.com", name:"Budi Santoso, S.Pd." } };
+let currentClass = "Kelas 7";
+let me = { name:"Budi Santoso, S.Pd." };
+function fillSignatureNames_(doc){
+  const sig = doc.querySelector("table.signature");
+  if(sig){
+    const dateEl = sig.querySelector(".sig-date");
+    if(dateEl) dateEl.textContent = tanggalLaporanId_();
+    const nameEl = sig.querySelector(".gembala-name");
+    const hm = (homeroomMap && homeroomMap[currentClass]) ? homeroomMap[currentClass] : null;
+    const gembalaName = (hm && (hm.name || hm.email)) || (me && me.name) || "";
+    if(nameEl) nameEl.textContent = safeText_(gembalaName);
+  }
+}
+const RAPORT_PDF_MARGIN_ = [37.1, 8.9, 21.8, 11.7];
+const RAPORT_PDF_SCALE_ = 2;
+function raportPageGridPx_(pageSize){
+  const m = RAPORT_PDF_MARGIN_;
+  const innerW = (pageSize && pageSize.inner) ? pageSize.inner.width : (210 - m[1] - m[3]);
+  const innerH = (pageSize && pageSize.inner) ? pageSize.inner.height : (297 - m[0] - m[2]);
+  const k = (pageSize && pageSize.k) ? pageSize.k : (72 / 25.4);
+  const wcss = innerW * k / 72 * 96;
+  const wdev = Math.ceil(wcss) * RAPORT_PDF_SCALE_;
+  return Math.floor(wdev * (innerH / innerW)) / RAPORT_PDF_SCALE_;
+}
+function pageBreakOffsetPx_(el, root, innerH){
+  if(!el || !root || !(innerH > 0)) return 0;
+  if(el.classList && el.classList.contains("page-break-before")) return 0;
+  const elTop = el.getBoundingClientRect().top;
+  let baseTop = null;
+  let baseSelf = false;
+  root.querySelectorAll(".page-break-before").forEach(b=>{
+    if(b === el){ baseSelf = true; return; }
+    if(el.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) return;
+    const t = b.getBoundingClientRect().top;
+    if(baseTop === null || t >= baseTop){ baseTop = t; baseSelf = false; }
+  });
+  if(baseSelf) return 0;
+  if(baseTop === null){
+    const h = elTop - root.getBoundingClientRect().top;
+    return ((h % innerH) + innerH) % innerH;
+  }
+  const h = elTop - baseTop;
+  return ((h % innerH) + innerH) % innerH;
+}
+function fitReportTablesToPages_(root, grid){
+  if(!root || !root.querySelectorAll) return;
+  const innerH = grid;
+  if(!(innerH > 100)) return;
+  const SAFETY = 2;
+  const queue = Array.from(root.querySelectorAll("table.report"));
+  let guard = 0;
+  while(queue.length && guard++ < 24){
+    const table = queue.shift();
+    const rows = Array.from(table.rows);
+    const headRow = rows[0] && rows[0].querySelectorAll("th").length ? rows[0] : null;
+    const headH = headRow ? (headRow.offsetHeight || 0) : 0;
+    const offset = pageBreakOffsetPx_(table, root, innerH);
+    let capacity = innerH - offset;
+    if(!(capacity > 10)) capacity = innerH;
+    let pageUsed = 0;
+    let cutAt = -1;
+    const startIdx = headRow ? 1 : 0;
+    if(headRow){
+      if(headH + SAFETY > capacity){ cutAt = 0; }
+      else { pageUsed = headH; }
+    }
+    if(cutAt < 0){
+      for(let i = startIdx; i < rows.length; i++){
+        const h = rows[i].offsetHeight || 0;
+        if(pageUsed + h + SAFETY > capacity){ cutAt = i; break; }
+        pageUsed += h;
+      }
+    }
+    if(cutAt < 0) continue;
+    while(cutAt > startIdx && rows[cutAt-1] && rows[cutAt-1].classList.contains("group-row")) cutAt--;
+    if(cutAt <= startIdx){
+      const parent = table.parentNode;
+      const inKeep = parent && parent.classList && parent.classList.contains("keep-block");
+      const target = inKeep ? parent : table;
+      if(!target.classList.contains("page-break-before")){
+        target.classList.add("page-break-before");
+        queue.unshift(table);
+        continue;
+      }
+      if(headRow && rows.length > 1){ cutAt = 1; }
+      else { continue; }
+    }
+    const next = table.cloneNode(false);
+    const colgroup = table.querySelector("colgroup");
+    if(colgroup){ next.appendChild(colgroup.cloneNode(true)); }
+    else if(headRow){
+      const cg = document.createElement("colgroup");
+      Array.from(headRow.cells).forEach(th=>{
+        const col = document.createElement("col");
+        const w = th.style.width || "";
+        if(w) col.style.width = w;
+        else if(th.offsetWidth && table.offsetWidth) col.style.width = (th.offsetWidth / table.offsetWidth * 100) + "%";
+        cg.appendChild(col);
+      });
+      next.appendChild(cg);
+    }
+    next.classList.add("page-break-before");
+    for(let i = cutAt; i < rows.length; i++) next.appendChild(rows[i]);
+    const parent = table.parentNode;
+    if(parent && parent.classList && parent.classList.contains("keep-block")){
+      parent.parentNode.insertBefore(next, parent.nextSibling);
+    }else{
+      table.parentNode.insertBefore(next, table.nextSibling);
+    }
+    queue.unshift(next);
+  }
+}
+const RAPORT_SPACER_CLS_ = "raport-page-spacer";
+const RAPORT_AVOID_SEL_ = ".keep-block, .meta, .note, .catatan, .signature, .headmaster, .pancasila-title, .tema-line, .desk-box, table.legend";
+function applyRaportPagination_(root, grid){
+  if(!root || !root.querySelectorAll || !(grid > 100)) return;
+  const EPS = 0.05;
+  const makeSpacer = h=>{
+    const d = document.createElement("div");
+    d.className = RAPORT_SPACER_CLS_;
+    d.style.cssText = `display:block;margin:0;padding:0;border:0;height:${h}px;`;
+    return d;
+  };
+  const isCandidate = el => !!(el && el.classList && (
+    el.classList.contains("page-break-before") ||
+    (el.matches && el.matches(RAPORT_AVOID_SEL_))
+  ));
+  const hasCandidateAncestor = el=>{
+    let p = el.parentElement;
+    while(p && p !== root){
+      if(isCandidate(p)) return true;
+      p = p.parentElement;
+    }
+    return false;
+  };
+  const countBreaks = ()=>root.querySelectorAll(".page-break-before").length;
+  let guard = 0;
+  while(guard++ < 10){
+    root.querySelectorAll("."+RAPORT_SPACER_CLS_).forEach(el=>el.remove());
+    const rootTop = root.getBoundingClientRect().top;
+    const candidates = Array.from(root.querySelectorAll(".page-break-before, " + RAPORT_AVOID_SEL_));
+    for(const el of candidates){
+      if(!el.isConnected) continue;
+      const r = el.getBoundingClientRect();
+      if(!(r.height > 0)) continue;
+      const top = r.top - rootTop;
+      if(el.classList.contains("page-break-before")){
+        const line = Math.floor((top + EPS) / grid) * grid;
+        const rem = top - line;
+        if(rem > EPS) el.parentNode.insertBefore(makeSpacer(grid - rem), el);
+        continue;
+      }
+      if(hasCandidateAncestor(el)) continue;
+      if(el.querySelector && el.querySelector("table.report")) continue;
+      const pStart = Math.floor((top + EPS) / grid);
+      const pEnd = Math.floor((r.bottom - rootTop - EPS) / grid);
+      if(pEnd > pStart && r.height <= grid + EPS){
+        const rem = top - pStart * grid;
+        const h = rem > EPS ? grid - rem : 0;
+        if(h > EPS) el.parentNode.insertBefore(makeSpacer(h), el);
+      }
+    }
+    const before = countBreaks();
+    fitReportTablesToPages_(root, grid);
+    if(countBreaks() === before) break;
+  }
+}
+async function buildRaportPrintNode_(mode){
+  const rowsData = SAMPLE_ROWS_;
+  const ctx = {
+    schoolName: "PKBM Eagle School",
+    address: "",
+    className: "Kelas 7",
+    studentName: "Maria Angelina Putri",
+    semesterLabel: "Term 2",
+    yearLabel: "2025/2026",
+    nisText: "2024071 / 0091234567",
+    faseText: "D / SMP"
+  };
+  const src = await (await fetch(`raport-term-genap.html?_ts=${Date.now()}`, { cache:"no-store" })).text();
+  const parsed = new DOMParser().parseFromString(src, "text/html");
+  fillMetaTables_(parsed, ctx);
+  const reportTables = Array.from(parsed.querySelectorAll("table.report"));
+  fillSubjectTableGenap_(reportTables[0], rowsData);
+  fillTalentTableGenap_(reportTables[1], SAMPLE_TALENT_);
+  fillEkskulTable_(reportTables[2], SAMPLE_EKSKUL_);
+  fillSingleColumnTable_(reportTables[3], "Anggota OSIS kelas, sekretaris kelas.");
+  fillSingleColumnTable_(reportTables[4], "Juara 1 lomba karya tulis ilmiah tingkat kota.");
+  fillAbsensiTable_(reportTables[5], { sakit:2, izin:1, alpha:0 });
+  const catatanBox = parsed.querySelector(".catatan");
+  if(catatanBox) catatanBox.textContent = SAMPLE_CATATAN_;
+  fillSignatureNames_(parsed);
+
+  Array.from(parsed.querySelectorAll(".section-title, .sub-title, .pancasila-title")).forEach(t=>{
+    const nxt = t.nextElementSibling;
+    if(!nxt) return;
+    if(nxt.classList.contains("page-break-before") || nxt.classList.contains("section-title") || nxt.classList.contains("sub-title") || nxt.classList.contains("pancasila-title")) return;
+    const wrap = parsed.createElement("div");
+    wrap.className = "keep-block";
+    if(t.classList.contains("page-break-before")){
+      t.classList.remove("page-break-before");
+      wrap.classList.add("page-break-before");
+    }
+    t.parentNode.insertBefore(wrap, t);
+    wrap.appendChild(t);
+    wrap.appendChild(nxt);
+  });
+
+  const headEl = parsed.querySelector(".headmaster");
+  if(headEl && !headEl.classList.contains("page-break-before")){
+    const signEl = headEl.previousElementSibling;
+    if(signEl && signEl.classList && signEl.classList.contains("signature")){
+      const wrap = parsed.createElement("div");
+      wrap.className = "keep-block";
+      signEl.parentNode.insertBefore(wrap, signEl);
+      wrap.appendChild(signEl);
+      wrap.appendChild(headEl);
+    }
+  }
+
+  const styleText = Array.from(parsed.querySelectorAll("style")).map(x=>x.textContent).join("\n");
+  const wrapper = document.createElement("div");
+  wrapper.innerHTML = `
+    <style>
+      ${styleText}
+      body{ background:#fff !important; }
+      #report-print-area{ background:#fff !important; margin:0 !important; padding:0 !important; }
+      .page{
+        width:189mm !important;
+        max-width:189mm !important;
+        margin:0 auto !important;
+        padding:0 !important;
+        box-shadow:none !important;
+        border-radius:0 !important;
+        page-break-inside:auto !important;
+        break-inside:auto !important;
+      }
+      table.report{
+        width:calc(100% - 2px) !important;
+        margin-right:2px !important;
+        border:1px solid var(--line, #000) !important;
+        border-collapse:collapse !important;
+        page-break-inside:avoid !important;
+        break-inside:avoid !important;
+      }
+      table.report th, table.report td{
+        white-space:normal !important;
+        overflow-wrap:anywhere !important;
+        word-break:break-word !important;
+        height:auto !important;
+        page-break-inside:auto !important;
+        break-inside:auto !important;
+      }
+      table.report td{ vertical-align:middle !important; }
+      table.report td.cell-justify{ vertical-align:top !important; }
+      table.report th{ vertical-align:middle !important; }
+      table.report th:last-child, table.report td:last-child{ border-right:1px solid var(--line, #000) !important; }
+      table.report tr{ page-break-inside:avoid !important; break-inside:avoid !important; }
+      .keep-block, .meta, .note, .catatan, .signature, .headmaster, .pancasila-title, .tema-line, .desk-box, table.legend{
+        page-break-inside:avoid !important;
+        break-inside:avoid !important;
+      }
+      .section-title, .sub-title, .pancasila-title{
+        page-break-after:avoid !important;
+        break-after:avoid !important;
+      }
+      .page-break-before{ page-break-before:always !important; break-before:page !important; }
+      @page{ size:A4 portrait; margin:1.46in 0.35in 0.86in 0.46in; }
+    </style>
+  `;
+  const page = parsed.body ? parsed.body.firstElementChild : null;
+  if(page) wrapper.appendChild(page);
+  return wrapper;
+}
+function prepareRaportForPrint_(node){
+  const container = document.getElementById("report-print-area");
+  if(!container || !node) return;
+  container.innerHTML = "";
+  container.appendChild(node);
+  container.classList.remove("hidden");
+}
+const SAMPLE_TALENT_ = {
+  name: "Visual",
+  predicate: "CK",
+  description: "Siswa mampu merancang dan membuat poster kampanye lingkungan dengan bahasa visual yang komunikatif, menggabungkan gambar, warna, dan teks secara seimbang."
+};
+const SAMPLE_EKSKUL_ = [
+  { name: "Pramuka", predicate: "MH", description: "Aktif mengikuti kegiatan latihan dan penugasan regu, mampu bekerja sama dan memimpin kegiatan kecil di gugus depan." },
+  { name: "Paduan Suara", predicate: "CK", description: "Mampu menyanyikan lagu dengan intonasi tepat dan mengikuti dinamika kelompok dengan baik." }
+];
+const SAMPLE_CATATAN_ = "Maria menunjukkan perkembangan yang baik selama semester ini. Ia semakin percaya diri saat menyampaikan pendapat di depan kelas dan rajin menyelesaikan tugas tepat waktu. Perlu dilatih konsistensi dalam membaca teks panjang agar pemahaman bacaannya lebih stabil. Tetap semangat dan terus berlatih.";
+const SAMPLE_ROWS_ = [
+  { relabel:false, label:"Pendidikan Agama Kristen dan Budi Pekerti", final:"88", kompetensiText:"Memiliki kemampuan dalam mengenal ajaran iman Kristen, menerapkan nilai-nilai kasih dalam kehidupan sehari-hari, serta berpartisipasi aktif dalam kegiatan kebaktian dan pelayanan di sekolah dengan penuh tanggung jawab." },
+  { relabel:false, label:"Pendidikan Pancasila", final:"85", kompetensiText:"Memiliki kemampuan dalam memahami nilai-nilai Pancasila, menunjukkan sikap toleransi dan gotong royong, serta mampu menyelesaikan permasalahan kelas secara demokratis bersama teman." },
+  { relabel:false, label:"Bahasa Indonesia", final:"82", kompetensiText:"Mulai memiliki kemampuan dalam memahami teks narasi dan deskripsi, menyusun gagasan secara runtut, serta menyajikan hasil kerja secara lisan dan tulisan dengan struktur yang benar." },
+  { relabel:false, label:"Matematika", final:"79", kompetensiText:"Mulai memiliki kemampuan dalam menyelesaikan operasi bilangan bulat dan pecahan, membaca data dari tabel serta grafik, serta memecahkan masalah kontekstual dengan langkah penyelesaian yang tertib." },
+  { relabel:false, label:"Bahasa Inggris", final:"86", kompetensiText:"Memiliki kemampuan dalam memahami teks pendek berbahasa Inggris, mengenal kosakata topik sehari-hari, serta berkomunikasi sederhana dalam situasi resmi dan tidak resmi." },
+  { relabel:false, label:"Science", final:"84", kompetensiText:"Memiliki kemampuan dalam menjelaskan konsep dasar zat dan perubahannya, mengamati fenomena alam, serta menyusun laporan percobaan sederhana dengan tabel data yang rapi." },
+  { relabel:false, label:"Social Studies", final:"81", kompetensiText:"Mulai memiliki kemampuan dalam memahami keragaman budaya Indonesia, membaca peta dan sumber sejarah, serta menyampaikan pendapat dengan menghargai sudut pandang orang lain." },
+  { relabel:false, label:"Pendidikan Jasmani Olahraga dan Kesehatan", final:"90", kompetensiText:"Memiliki kemampuan dalam mempraktikkan teknik dasar gerak lokomotor dan nonlokomotor, menjaga kebugaran tubuh, serta menunjukkan sportivitas saat bermain dan berkompetisi." },
+  { relabel:false, label:"Seni Budaya", final:"83", kompetensiText:"Mulai memiliki kemampuan dalam mengenal ragam hias, menciptakan karya dua dimensi dengan komposisi seimbang, serta mengapresiasi karya seni budaya daerah." },
+  { relabel:false, label:"Bahasa Jawa", final:"80", kompetensiText:"Mulai memiliki kemampuan dalam membaca dan menulis aksara Jawa dasar, memahami ungkapan serta basa krama dalam percakapan sederhana sehari-hari." },
+  { relabel:false, label:"Communication Skills", final:"87", kompetensiText:"Memiliki kemampuan dalam menyampaikan ide secara runtut, mendengarkan lawan bicara dengan penuh perhatian, serta bekerja dalam tim untuk mempresentasikan hasil diskusi kelompok." },
+  { relabel:false, label:"Informatika dan Teknologi", final:"89", kompetensiText:"Memiliki kemampuan dalam menggunakan aplikasi perkantoran dasar, memahami konsep jaringan dan keamanan digital, serta membuat presentasi digital yang menarik dan terstruktur." },
+  { relabel:false, label:"Pemberdayaan", final:"85", kompetensiText:"Memiliki kemampuan dalam mengembangkan keterampilan personal, menyusun rencana belajar mandiri, serta menunjukkan kedisiplinan dan tanggung jawab dalam setiap kegiatan." },
+  { relabel:false, label:"Entrepreneurship", final:"84", kompetensiText:"Memiliki kemampuan dalam memahami konsep usaha sederhana, menyusun rencana produk, serta mempresentasikan ide bisnis dengan memperhatikan kebutuhan dan nilai manfaat bagi konsumen." }
+];
+window.addEventListener("load", async ()=>{
+  try{
+    const node = await buildRaportPrintNode_("genap");
+    prepareRaportForPrint_(node);
+    const container = document.getElementById("report-print-area");
+    const opt = {
+      margin: RAPORT_PDF_MARGIN_,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: { scale: RAPORT_PDF_SCALE_, useCORS: true, backgroundColor:"#ffffff" },
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      pagebreak: { mode: [], before: [], after: [], avoid: [] }
+    };
+    const w = html2pdf().set(opt).from(container);
+    await w.toContainer();
+    const grid = raportPageGridPx_(w.prop.pageSize);
+    console.log("DBG grid:", grid, "inner.px:", w.prop.pageSize.inner.px.height);
+    applyRaportPagination_(w.prop.container, grid);
+    const sp = w.prop.container.querySelectorAll(".raport-page-spacer");
+    console.log("DBG spacers:", sp.length, Array.from(sp).map(d=>d.style.height).join(","));
+
+    // VERIFIKASI: tidak boleh ada elemen yang terbelah dua halaman
+    const root = w.prop.container;
+    const rootTop = root.getBoundingClientRect().top;
+    const EPS = 0.05;
+    const SEL = "tr, .keep-block, .meta, .note, .catatan, .signature, .headmaster, .pancasila-title, .tema-line, .desk-box, table.legend, .section-title, .sub-title";
+    const bad = [];
+    root.querySelectorAll(SEL).forEach(el=>{
+      if(el.closest("table.report") && el.tagName !== "TR") return;
+      const r = el.getBoundingClientRect();
+      if(!(r.height > 0)) return;
+      const top = r.top - rootTop, bottom = r.bottom - rootTop;
+      const pS = Math.floor((top + EPS)/grid), pE = Math.floor((bottom - EPS)/grid);
+      if(pE > pS) bad.push(`${el.tagName}.${el.className||"-"} page ${pS}->${pE} h=${(r.height).toFixed(1)} top=${top.toFixed(1)} text="${(el.textContent||"").trim().slice(0,40)}"`);
+    });
+    console.log("DBG straddle-count:", bad.length);
+    bad.forEach(b=>console.log("DBG STRADDLE:", b));
+    // halaman yang diawali elemen break
+    root.querySelectorAll(".page-break-before").forEach(el=>{
+      const r = el.getBoundingClientRect();
+      const top = r.top - rootTop;
+      console.log("DBG break:", el.tagName+"."+(el.className||"-"), "top=", top.toFixed(2), "mod grid=", (top % grid).toFixed(2));
+    });
+
+    const blob = await w.output("blob");
+    const buf = await blob.arrayBuffer();
+    let bin = "";
+    const bytes = new Uint8Array(buf);
+    const chunk = 0x8000;
+    for(let i = 0; i < bytes.length; i += chunk){
+      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+    }
+    window.__pdfBase64 = btoa(bin);
+    document.title = "DONE";
+  }catch(e){
+    document.title = "ERROR: " + (e && e.message);
+    console.error(e);
+  }
+});
+  </script>
+</body>
+</html>

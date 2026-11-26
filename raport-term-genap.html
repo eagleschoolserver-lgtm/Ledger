@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Raport Term Genap</title>
+  <style>
+    :root{
+      --line:#000;
+    }
+    *{box-sizing:border-box}
+    html, body{ margin:0; padding:0; }
+    body{
+      font-family:"Times New Roman", Times, serif;
+      background:#eef2f7;
+      color:#000;
+      line-height:1.15;
+    }
+    .page{
+      max-width:850px;
+      margin:24px auto;
+      background:#fff;
+      padding:24px;
+      box-shadow:0 4px 18px rgba(0,0,0,.08);
+      border-radius:10px;
+    }
+    .meta{
+      width:100%;
+      table-layout:fixed;
+      border-collapse:collapse;
+      margin-bottom:6pt;
+      font-size:11pt;
+      font-weight:bold;
+      page-break-inside:avoid;
+      break-inside:avoid;
+    }
+    .meta td{
+      width:50%;
+      padding:0 4px;
+      vertical-align:top;
+      font-weight:bold;
+    }
+    .meta td:first-child{ width:60%; padding-left:12px; }
+    .meta td:last-child{ width:40%; padding-left:2px; }
+    .meta-line{
+      display:grid;
+      grid-template-columns:96px 10px 1fr;
+      align-items:start;
+      column-gap:0;
+      min-height:16pt;
+      font-weight:bold;
+    }
+    .meta td:last-child .meta-line{
+      grid-template-columns:112px 10px 1fr;
+    }
+    .meta-label{font-weight:bold; white-space:nowrap;}
+    .meta-colon{text-align:left; padding-left:2px;}
+    .meta-value{min-width:0; overflow-wrap:anywhere; font-weight:bold; padding-left:4px;}
+    .section-title{
+      margin:8pt 0 5pt;
+      font-weight:bold;
+      font-size:11pt;
+      color:#000;
+      page-break-after:avoid;
+      break-after:avoid;
+    }
+    .meta, .note, .catatan, .signature, .headmaster{
+      page-break-inside:avoid;
+      break-inside:avoid;
+    }
+    table.report{
+      width:100%;
+      border:1px solid #000;
+      border-collapse:collapse;
+      table-layout:fixed;
+      font-size:11pt;
+      page-break-inside:auto;
+      break-inside:auto;
+    }
+    table.report th, table.report td{
+      border:1px solid #000;
+      padding:3pt 4pt;
+      vertical-align:middle;
+      line-height:1.15;
+      white-space:normal;
+      overflow-wrap:anywhere;
+      word-break:break-word;
+      page-break-inside:auto;
+      break-inside:auto;
+      background:#fff;
+      color:#000;
+    }
+    table.report th{
+      text-align:center;
+      font-weight:bold;
+    }
+    table.report tr{
+      page-break-inside:avoid;
+      break-inside:avoid;
+    }
+    .col-no{ width:4.5%; text-align:center; }
+    .group-row td{
+      background:#fff;
+      font-weight:bold;
+      text-align:left;
+      vertical-align:middle;
+    }
+    .cell-center{ text-align:center; }
+    .cell-justify{ text-align:justify; vertical-align:top; }
+    .note{
+      margin-top:8pt;
+      font-size:11pt;
+      font-weight:bold;
+      page-break-inside:avoid;
+      break-inside:avoid;
+    }
+    .note-legend{
+      display:grid;
+      grid-template-columns:28% 27% 20% 25%;
+      font-weight:bold;
+      margin-top:2pt;
+    }
+    .catatan{
+      min-height:90pt;
+      border:1px solid #000;
+      padding:8px 12px;
+      margin-top:4pt;
+      font-size:11pt;
+      line-height:1.2;
+      text-align:justify;
+      page-break-inside:avoid;
+      break-inside:avoid;
+    }
+    .signature{
+      width:100%;
+      margin-top:18pt;
+      border-collapse:collapse;
+      font-size:12pt;
+      table-layout:fixed;
+      font-weight:normal;
+    }
+    .signature td{
+      width:60%;
+      text-align:left;
+      padding:0;
+      vertical-align:top;
+      font-size:12pt;
+      font-weight:normal;
+      line-height:1.3;
+    }
+    .signature td:first-child{ padding-left:12px; }
+    .signature td:last-child{ width:40%; }
+    .sign-space{height:130pt;}
+    .sign-line{
+      display:inline-block;
+      width:185pt;
+      border-bottom:1px solid #000;
+      height:1pt;
+      vertical-align:bottom;
+    }
+    .gembala-name{
+      display:block;
+      vertical-align:bottom;
+      padding-bottom:4pt;
+      min-height:16pt;
+    }
+    .sig-date{ white-space:nowrap; }
+    .headmaster{
+      margin-top:24pt;
+      text-align:center;
+      font-size:12pt;
+      font-weight:normal;
+      line-height:1.3;
+      page-break-inside:avoid;
+      break-inside:avoid;
+    }
+    .headmaster .sign-space{height:110pt;}
+    .pancasila-title{
+      text-align:center;
+      font-weight:bold;
+      font-size:14pt;
+      margin:10pt 0 10pt;
+      page-break-inside:avoid;
+      break-inside:avoid;
+    }
+    .tema-line{
+      font-weight:bold;
+      font-size:11pt;
+      margin:4pt 0;
+      display:grid;
+      grid-template-columns:150px 12px 1fr;
+      align-items:start;
+      min-height:17pt;
+      page-break-inside:avoid;
+      break-inside:avoid;
+    }
+    .desk-box{
+      border:1px solid #000;
+      padding:7px 12px;
+      margin-top:8pt;
+      font-size:11pt;
+      line-height:1.25;
+      text-align:justify;
+      min-height:70pt;
+      page-break-inside:avoid;
+      break-inside:avoid;
+    }
+    .sub-title{
+      font-weight:bold;
+      font-size:11pt;
+      margin:16pt 0 5pt;
+      page-break-after:avoid;
+      break-after:avoid;
+      page-break-inside:avoid;
+      break-inside:avoid;
+    }
+    table.legend{
+      width:100%;
+      border:1px solid #000;
+      border-collapse:collapse;
+      table-layout:fixed;
+      font-size:11pt;
+      page-break-inside:avoid;
+      break-inside:avoid;
+    }
+    table.legend td{
+      border:1px solid #000;
+      padding:4pt 6pt;
+      vertical-align:top;
+      line-height:1.2;
+      width:25%;
+      background:#fff;
+    }
+    table.legend .legend-head{
+      font-weight:bold;
+      display:block;
+      margin-bottom:4pt;
+    }
+    .group-row-pan td{
+      background:#fff;
+      font-weight:bold;
+      text-align:left;
+      vertical-align:middle;
+    }
+    .item-head{
+      font-weight:bold;
+      display:block;
+      margin-bottom:3pt;
+    }
+    .page-break-before{
+      page-break-before:always;
+      break-before:page;
+    }
+    @page{ size:A4 portrait; margin:1.46in 0.35in 0.86in 0.46in; }
+    @media print{
+      body{background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+      .page{box-shadow:none; margin:0; border-radius:0; padding:0; max-width:none;}
+      .page-break-before{page-break-before:always; break-before:page;}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <table class="meta">
+      <tr>
+        <td><span class="meta-line"><span class="meta-label">Nama Sekolah</span><span class="meta-colon">:</span><span class="meta-value"></span></span></td>
+        <td><span class="meta-line"><span class="meta-label">Fase / Tingkatan</span><span class="meta-colon">:</span><span class="meta-value"></span></span></td>
+      </tr>
+      <tr>
+        <td><span class="meta-line"><span class="meta-label">Alamat</span><span class="meta-colon">:</span><span class="meta-value"></span></span></td>
+        <td><span class="meta-line"><span class="meta-label">Kelas</span><span class="meta-colon">:</span><span class="meta-value"></span></span></td>
+      </tr>
+      <tr>
+        <td><span class="meta-line"><span class="meta-label">Nama Siswa</span><span class="meta-colon">:</span><span class="meta-value"></span></span></td>
+        <td><span class="meta-line"><span class="meta-label">Semester</span><span class="meta-colon">:</span><span class="meta-value"></span></span></td>
+      </tr>
+      <tr>
+        <td><span class="meta-line"><span class="meta-label">NIS / NISN</span><span class="meta-colon">:</span><span class="meta-value"></span></span></td>
+        <td><span class="meta-line"><span class="meta-label">Tahun Pelajaran</span><span class="meta-colon">:</span><span class="meta-value"></span></span></td>
+      </tr>
+    </table>
+
+    <div class="section-title">A. NILAI PENGETAHUAN DAN SIKAP</div>
+    <table class="report">
+      <colgroup>
+        <col class="col-no">
+        <col style="width:27.4%">
+        <col style="width:9.1%">
+        <col style="width:13.3%">
+        <col style="width:45.7%">
+      </colgroup>
+      <tr>
+        <th>No</th>
+        <th>Mata Pelajaran dan Program Pemberdayaan</th>
+        <th>KKM</th>
+        <th>Nilai Akhir</th>
+        <th>Capaian Kompetensi</th>
+      </tr>
+      <tr class="group-row"><td colspan="5">Kelompok Mata Pelajaran Umum</td></tr>
+      <tr><td class="col-no">1</td><td>Pendidikan Agama Kristen dan Budi Pekerti</td><td class="cell-center">78</td><td class="cell-center"></td><td class="cell-justify"></td></tr>
+      <tr><td class="col-no">2</td><td>Pendidikan Pancasila</td><td class="cell-center">78</td><td class="cell-center"></td><td class="cell-justify"></td></tr>
+      <tr><td class="col-no">3</td><td>Bahasa Indonesia</td><td class="cell-center">75</td><td class="cell-center"></td><td class="cell-justify"></td></tr>
+      <tr><td class="col-no">4</td><td>Matematika</td><td class="cell-center">72</td><td class="cell-center"></td><td class="cell-justify"></td></tr>
+      <tr><td class="col-no">5</td><td>Bahasa Inggris</td><td class="cell-center">72</td><td class="cell-center"></td><td class="cell-justify"></td></tr>
+      <tr><td class="col-no">6</td><td>Science</td><td class="cell-center">72</td><td class="cell-center"></td><td class="cell-justify"></td></tr>
+      <tr><td class="col-no">7</td><td>Social Studies</td><td class="cell-center">75</td><td class="cell-center"></td><td class="cell-justify"></td></tr>
+      <tr><td class="col-no">8</td><td>Pendidikan Jasmani Olahraga dan Kesehatan</td><td class="cell-center">75</td><td class="cell-center"></td><td class="cell-justify"></td></tr>
+      <tr><td class="col-no">9</td><td>Seni Budaya</td><td class="cell-center">75</td><td class="cell-center"></td><td class="cell-justify"></td></tr>
+
+      <tr class="group-row"><td colspan="5">Muatan Lokal</td></tr>
+      <tr><td class="col-no">10</td><td>Bahasa Jawa</td><td class="cell-center">75</td><td class="cell-center"></td><td class="cell-justify"></td></tr>
+      <tr><td class="col-no">11</td><td>Communication Skills</td><td class="cell-center">75</td><td class="cell-center"></td><td class="cell-justify"></td></tr>
+      <tr><td class="col-no">12</td><td>Informatika dan Teknologi</td><td class="cell-center">75</td><td class="cell-center"></td><td class="cell-justify"></td></tr>
+
+      <tr class="group-row"><td colspan="5">Program Pemberdayaan</td></tr>
+      <tr><td class="col-no">13</td><td>Pemberdayaan</td><td class="cell-center">75</td><td class="cell-center"></td><td class="cell-justify"></td></tr>
+
+      <tr class="group-row"><td colspan="5">Program Entrepreneurship</td></tr>
+      <tr><td class="col-no">14</td><td>Entrepreneurship</td><td class="cell-center">75</td><td class="cell-center"></td><td class="cell-justify"></td></tr>
+      <tr class="group-row sma-only-row"><td colspan="5">Mata Pelajaran Tambahan (SMA)</td></tr>
+      <tr><td class="col-no">15</td><td>Mandarin</td><td class="cell-center">75</td><td class="cell-center"></td><td class="cell-justify"></td></tr>
+      <tr><td class="col-no">16</td><td>Sejarah</td><td class="cell-center">75</td><td class="cell-center"></td><td class="cell-justify"></td></tr>
+    </table>
+
+    <table class="meta page-break-before" style="margin-top:0;">
+      <tr>
+        <td><span class="meta-line"><span class="meta-label">Nama Sekolah</span><span class="meta-colon">:</span><span class="meta-value"></span></span></td>
+        <td><span class="meta-line"><span class="meta-label">Fase / Tingkatan</span><span class="meta-colon">:</span><span class="meta-value"></span></span></td>
+      </tr>
+      <tr>
+        <td><span class="meta-line"><span class="meta-label">Alamat</span><span class="meta-colon">:</span><span class="meta-value"></span></span></td>
+        <td><span class="meta-line"><span class="meta-label">Kelas</span><span class="meta-colon">:</span><span class="meta-value"></span></span></td>
+      </tr>
+      <tr>
+        <td><span class="meta-line"><span class="meta-label">Nama Siswa</span><span class="meta-colon">:</span><span class="meta-value"></span></span></td>
+        <td><span class="meta-line"><span class="meta-label">Semester</span><span class="meta-colon">:</span><span class="meta-value"></span></span></td>
+      </tr>
+      <tr>
+        <td><span class="meta-line"><span class="meta-label">NIS / NISN</span><span class="meta-colon">:</span><span class="meta-value"></span></span></td>
+        <td><span class="meta-line"><span class="meta-label">Tahun Pelajaran</span><span class="meta-colon">:</span><span class="meta-value"></span></span></td>
+      </tr>
+    </table>
+
+    <div class="section-title">B. KETERAMPILAN BERBASIS TALENT</div>
+    <table class="report">
+      <colgroup>
+        <col class="col-no">
+        <col style="width:21.4%">
+        <col style="width:14.9%">
+        <col style="width:59.2%">
+      </colgroup>
+      <tr>
+        <th>No</th>
+        <th>Judul Proyek</th>
+        <th>Nilai</th>
+        <th>Deskripsi</th>
+      </tr>
+      <tr class="group-row"><td colspan="4">Jenis Talent</td></tr>
+      <tr><td class="col-no">1</td><td></td><td class="cell-center"></td><td class="cell-justify"></td></tr>
+      <tr><td class="col-no">2</td><td></td><td class="cell-center"></td><td class="cell-justify"></td></tr>
+    </table>
+    <div class="note">
+      <div>Kompetensi Capaian Siswa :</div>
+      <div class="note-legend">
+        <span>PB : Perlu Bimbingan</span>
+        <span>BK : Berkembang</span>
+        <span>CK : Cakap</span>
+        <span>MH : Mahir</span>
+      </div>
+    </div>
+
+    <div class="section-title">C. EKSTRAKURIKULER</div>
+    <table class="report">
+      <colgroup>
+        <col class="col-no">
+        <col style="width:22.2%">
+        <col style="width:7.9%">
+        <col style="width:65.4%">
+      </colgroup>
+      <tr>
+        <th>No</th>
+        <th>Kegiatan</th>
+        <th>Nilai</th>
+        <th>Deskripsi</th>
+      </tr>
+      <tr><td class="col-no">1</td><td></td><td class="cell-center"></td><td class="cell-justify"></td></tr>
+      <tr><td class="col-no">2</td><td></td><td class="cell-center"></td><td class="cell-justify"></td></tr>
+    </table>
+    <div class="note">
+      <div>Kompetensi Capaian Siswa :</div>
+      <div class="note-legend">
+        <span>PB : Perlu Bimbingan</span>
+        <span>BK : Berkembang</span>
+        <span>CK : Cakap</span>
+        <span>MH : Mahir</span>
+      </div>
+    </div>
+
+    <div class="section-title">D. ORGANISASI SEKOLAH</div>
+    <table class="report">
+      <colgroup>
+        <col class="col-no">
+        <col style="width:95.5%">
+      </colgroup>
+      <tr><th>No</th><th>Kegiatan Organisasi Sekolah</th></tr>
+      <tr><td class="col-no">1</td><td></td></tr>
+    </table>
+
+    <div class="section-title">E. PRESTASI</div>
+    <table class="report">
+      <colgroup>
+        <col class="col-no">
+        <col style="width:95.5%">
+      </colgroup>
+      <tr><th>No</th><th>Prestasi</th></tr>
+      <tr><td class="col-no">1</td><td></td></tr>
+    </table>
+
+    <div class="section-title">F. KETIDAKHADIRAN</div>
+    <table class="report">
+      <colgroup>
+        <col style="width:50%">
+        <col style="width:50%">
+      </colgroup>
+      <tr><th>Jenis Ketidakhadiran</th><th>Jumlah</th></tr>
+      <tr><td>Sakit</td><td></td></tr>
+      <tr><td>Izin</td><td></td></tr>
+      <tr><td>Tanpa Keterangan</td><td></td></tr>
+    </table>
+
+    <table class="meta page-break-before" style="margin-top:0;">
+      <tr>
+        <td><span class="meta-line"><span class="meta-label">Nama Sekolah</span><span class="meta-colon">:</span><span class="meta-value"></span></span></td>
+        <td><span class="meta-line"><span class="meta-label">Fase / Tingkatan</span><span class="meta-colon">:</span><span class="meta-value"></span></span></td>
+      </tr>
+      <tr>
+        <td><span class="meta-line"><span class="meta-label">Alamat</span><span class="meta-colon">:</span><span class="meta-value"></span></span></td>
+        <td><span class="meta-line"><span class="meta-label">Kelas</span><span class="meta-colon">:</span><span class="meta-value"></span></span></td>
+      </tr>
+      <tr>
+        <td><span class="meta-line"><span class="meta-label">Nama Siswa</span><span class="meta-colon">:</span><span class="meta-value"></span></span></td>
+        <td><span class="meta-line"><span class="meta-label">Semester</span><span class="meta-colon">:</span><span class="meta-value"></span></span></td>
+      </tr>
+      <tr>
+        <td><span class="meta-line"><span class="meta-label">NIS / NISN</span><span class="meta-colon">:</span><span class="meta-value"></span></span></td>
+        <td><span class="meta-line"><span class="meta-label">Tahun Pelajaran</span><span class="meta-colon">:</span><span class="meta-value"></span></span></td>
+      </tr>
+    </table>
+
+    <div class="pancasila-block">
+      <div class="pancasila-title">RAPOR PROFIL PELAJAR PANCASILA</div>
+
+      <div class="tema-line"><span>Tema Projek</span><span>:</span><span></span></div>
+      <div class="tema-line"><span>Sub Tema Projek</span><span>:</span><span></span></div>
+
+      <div class="desk-box"></div>
+
+      <div class="sub-title">Kompetensi Pencapaian Siswa</div>
+      <table class="legend">
+        <tr>
+          <td>
+            <span class="legend-head">Belum Berkembang<br>(BB)</span>
+            Siswa masih membutuhkan bimbingan dalam mengembangkan kemampuan.
+          </td>
+          <td>
+            <span class="legend-head">Mulai Berkembang<br>(MB)</span>
+            Siswa mulai mengembangkan kemampuan namun masih dibantu oleh guru.
+          </td>
+          <td>
+            <span class="legend-head">Berkembang Sesuai Harapan<br>(BSH)</span>
+            Siswa telah mengembangkan kemampuan dengan baik.
+          </td>
+          <td>
+            <span class="legend-head">Berkembang Sangat Baik<br>(BSB)</span>
+            Siswa mengembangkan kemampuan secara mandiri dan dapat membantu temannya.
+          </td>
+        </tr>
+      </table>
+
+      <div class="sub-title">Pencapaian Siswa</div>
+      <table class="report">
+        <colgroup>
+          <col style="width:85%">
+          <col style="width:15%">
+        </colgroup>
+        <tr>
+          <th>Kriteria Pencapaian Siswa</th>
+          <th>Kompetensi</th>
+        </tr>
+
+        <tr class="group-row-pan"><td colspan="2">Berkebhinekaan Global</td></tr>
+        <tr>
+          <td>
+            <span class="item-head">Mengenal dan Menghargai Budaya</span>
+            <span class="cell-justify" style="display:block"></span>
+          </td>
+          <td class="cell-center"></td>
+        </tr>
+
+        <tr class="group-row-pan"><td colspan="2">Bergotong Royong</td></tr>
+        <tr>
+          <td>
+            <span class="item-head">Kolaborasi</span>
+            <span class="cell-justify" style="display:block"></span>
+          </td>
+          <td class="cell-center"></td>
+        </tr>
+
+        <tr class="group-row-pan"><td colspan="2">Mandiri</td></tr>
+        <tr>
+          <td>
+            <span class="item-head">Regulasi Diri</span>
+            <span class="cell-justify" style="display:block"></span>
+          </td>
+          <td class="cell-center"></td>
+        </tr>
+
+        <tr class="group-row-pan"><td colspan="2">Bernalar Kritis</td></tr>
+        <tr>
+          <td>
+            <span class="item-head">Memperoleh dan Memproses Informasi dan Gagasan</span>
+            <span class="cell-justify" style="display:block"></span>
+          </td>
+          <td class="cell-center"></td>
+        </tr>
+        <tr>
+          <td>
+            <span class="item-head">Menganalisis dan Mengevaluasi Penalaran dan Prosedurnya</span>
+            <span class="cell-justify" style="display:block"></span>
+          </td>
+          <td class="cell-center"></td>
+        </tr>
+
+        <tr class="group-row-pan"><td colspan="2">Kreatif</td></tr>
+        <tr>
+          <td>
+            <span class="item-head">Gagasan yang Orisinal</span>
+            <span class="cell-justify" style="display:block"></span>
+          </td>
+          <td class="cell-center"></td>
+        </tr>
+        <tr>
+          <td>
+            <span class="item-head">Karya dan Tindakan yang Orisinal</span>
+            <span class="cell-justify" style="display:block"></span>
+          </td>
+          <td class="cell-center"></td>
+        </tr>
+        <tr>
+          <td>
+            <span class="item-head">Keluwesan Berpikir Dalam Mencari Alternatif Solusi Permasalahan</span>
+            <span class="cell-justify" style="display:block"></span>
+          </td>
+          <td class="cell-center"></td>
+        </tr>
+
+        <tr>
+          <td>
+            <span class="item-head">Catatan Proses:</span>
+            <span class="cell-justify" style="display:block"></span>
+          </td>
+          <td class="cell-center"></td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="section-title page-break-before">CATATAN GEMBALA</div>
+    <div class="catatan"></div>
+
+    <table class="signature">
+      <tr>
+        <td>Mengetahui,<br>Orang Tua / Wali</td>
+        <td>Semarang, <span class="sig-date">..............................</span><br>Gembala Kelas,</td>
+      </tr>
+      <tr>
+        <td class="sign-space" style="vertical-align:bottom; padding-bottom:2pt;"><span class="sign-line"></span></td>
+        <td class="sign-space" style="vertical-align:bottom; padding-bottom:2pt;"><span class="gembala-name"></span></td>
+      </tr>
+    </table>
+
+    <div class="headmaster">
+      Mengetahui,<br>
+      Pengelola PKBM Eagle School
+      <div class="sign-space"></div>
+      Dedie Yulianto, S.Kom.
+    </div>
+  </div>
+</body>
+</html>
